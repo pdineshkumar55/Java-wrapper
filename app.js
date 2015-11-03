@@ -27,11 +27,10 @@ var server = require('http').Server();
 // })
 
 
-
 var ourSocket
 // Server 1
 var io = require('socket.io').listen(server); // This is the Server for SERVER 1
-var other_server = require("socket.io-client")('http://52.8.2.219:3010'); // This is a client connecting to the SERVER 2
+var other_server = require("socket.io-client")('http://52.8.2.219:3002'); // This is a client connecting to the SERVER 2
 
 other_server.on("connect",function(){
     other_server.on('message',function(data){
@@ -40,6 +39,11 @@ other_server.on("connect",function(){
         // io.to('lobby').emit('message',data);
         console.log(data)
         ourSocket.emit('message', data)
+    });
+
+    other_server.on('deviceConnected',function(data){
+        console.log(data)
+        ourSocket.emit('deviceConnected', data)
     });
 });
 
@@ -61,6 +65,10 @@ io.sockets.on("connection",function(socket){
         other_server.emit("message",data);
     });
 
+    socket.on("addDevice",function(data){
+        other_server.emit("addDevice",data);
+    });
+
     socket.on("disconnect",function(data){
         // We need to notify Server 2 that the client has disconnected
         other_server.emit("message","UD,"+socket.id);
@@ -70,12 +78,6 @@ io.sockets.on("connection",function(socket){
         // Your other disconnect code here
     });
 });
-
-
-
-
-
-
 
 server.listen(3020);
 
