@@ -45,6 +45,11 @@ other_server.on("connect",function(){
         console.log(data)
         ourSocket.emit('deviceConnected', data)
     });
+
+    other_server.on('tv', function(data){
+    	console.log(data)
+    	ourSocket.emit('tv', data)
+    })
 });
 
 io.sockets.on("connection",function(socket){
