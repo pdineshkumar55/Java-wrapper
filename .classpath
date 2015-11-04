@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
+	<classpathentry exported="true" kind="lib" path="/home/shriram/Desktop/socket.io-java-client/jar/socketio.jar"/>
+	<classpathentry exported="true" kind="lib" path="engine.io-client-0.4.1-5a588af3041b55697d74b0a040369d0b2efc60d7.jar"/>
+	<classpathentry exported="true" kind="lib" path="Java-WebSocket-1.3.0-138287080a8789d0f6537c6c2bf2e419fa066238.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
