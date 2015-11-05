@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## How to Develop and Deploy
 
 0. Install Apache Maven (version >= 3) on your local dev machine. Set up the path as the tutorial tells.
@@ -27,3 +28,9 @@
 ## Troubleshooting
 
 The log can also be found in file verbose.log and file root.log
+=======
+# EverTV_Roku_Java_Wrapper
+EverTV_Roku_Java_Wrapper Git for Avezatech to upload code.
+AWS instance is 54.215.234.171. 
+Permission certificate for instance is EverRokuDev.pem
+>>>>>>> 2f15f87070d9d62162653a67b84bbc84dfd41f63
