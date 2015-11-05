@@ -9,19 +9,33 @@
 		</layout>
 	</appender>
 
-
+ 
 	<appender name="root-appender" class="org.apache.log4j.RollingFileAppender">
-		<param name="file" value="./xtrf-logs/root.log" />
+		<param name="file" value="./wsrs/root.log" />
 		<param name="append" value="true" />
 		<param name="encoding" value="UTF-8" />
 		<layout class="org.apache.log4j.PatternLayout">
 			<param name="ConversionPattern" value="%d %t %-5p %c - %m%n" />
 		</layout>
 	</appender>
+	
+	<appender name="verbose-appender" class="org.apache.log4j.RollingFileAppender">
+		<param name="file" value="./wsrs/verbose.log" />
+		<param name="append" value="true" />
+		<param name="encoding" value="UTF-8" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %t %-5p %c - %m%n" />
+		</layout>
+	</appender>	
+	
+	<logger name="verboseLogger">
+		<level value="info" />
+		<appender-ref ref="verbose-appender" />
+		<appender-ref ref="console" /> 
+	</logger>
 
 	<root>
-		<level value="info" />
-		<appender-ref ref="console" /> 
+		<level value="error" />
 		<appender-ref ref="root-appender" />
 	</root>
 
