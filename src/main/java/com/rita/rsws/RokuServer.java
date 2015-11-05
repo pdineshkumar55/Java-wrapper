@@ -114,7 +114,7 @@ public class RokuServer {
 				while (true) {
 					Socket clientSocket = null;
 					try {
-						clientSocket = rokuServerSocket.accept();
+						clientSocket = rokuServerSocket.accept();						
 					} catch (IOException e) {
 						logger.error(
 								"Failed to take an incoming connection from Roku.",
@@ -190,9 +190,13 @@ public class RokuServer {
 				try {
 					in = socket.getInputStream();
 					rokuMsg = readMsgFromSocket(in);
-					if (rokuMsg == null || rokuMsg.isEmpty()) {
-						continue;
+					if (rokuMsg == null) { //the client has been lost
+						socket.close();
+						return;
 					}
+//					if (rokuMsg.isEmpty()) {
+//						continue;
+//					}					
 					verboseLogger.info("msg got from roku with socket = "
 							+ socket.getRemoteSocketAddress() + " and msg = "
 							+ rokuMsg);
