@@ -41,14 +41,12 @@ public class RswsServers {
 	}
 
 	private ServerSocket rokuServer;
-	private ServerSocket sioServer;
 
 	private static Logger verboseLogger = LoggerFactory
 			.getLogger("verboseLogger");
 	private static Logger logger = LoggerFactory.getLogger(RswsServers.class);
 
 	private static final int ROKU_SERVER_PORT = 11050;
-	private static final int SIO_SERVER_PORT = 11051;
 
 	private ExecutorService rokuSocketWorkers;
 
@@ -71,55 +69,6 @@ public class RswsServers {
 			logger.error("Cannot start roku server socket", e);
 			return;
 		}
-
-		try {
-			startSioServer();
-		} catch (Exception e) {
-			logger.error("Cannot start socket.io server socket", e);
-			return;
-		}
-
-	}
-
-	private void startSioServer() throws IOException {
-
-		// start up the server
-		try {
-			sioServer = new ServerSocket(SIO_SERVER_PORT);
-			verboseLogger.info("socket.io server socket started on port "
-					+ SIO_SERVER_PORT);
-		} catch (IOException e) {
-			throw e;
-		}
-
-		// take incoming connections in an unblocking way
-		Runnable startServerTask = new Runnable() {
-			public void run() {
-				while (true) {
-
-					try {
-						sioSocket = sioServer.accept();
-					} catch (IOException e) {
-						logger.error(
-								"Failed to take an incoming connection from socket.io.",
-								e);
-						verboseLogger
-								.error("Failed to take an incoming connection from socket.io."
-										+ e.getMessage());
-						continue;
-					}
-					verboseLogger
-							.info("A new connection from socket.io has been set up. "
-									+ sioSocket.getRemoteSocketAddress());
-
-					rokuSocketWorkers.submit(new ReadSioSocketTask());
-
-				}
-
-			}
-		};
-
-		Executors.newSingleThreadExecutor().submit(startServerTask);
 
 	}
 
@@ -166,93 +115,6 @@ public class RswsServers {
 
 	}
 
-	private class ReadSioSocketTask implements Runnable {
-
-		// this is thread-safe because only one thread will be used to read the
-		// socket.io socket
-		@Override
-		public void run() {
-			while (true) {
-
-				String sioMsg = null;
-				InputStream in = null;
-				try {
-					in = sioSocket.getInputStream();
-					sioMsg = readMsgFromSocket(in);
-
-					if (sioMsg == null || sioMsg.isEmpty()) {
-						continue;
-					}
-
-					verboseLogger.info("msg got from socket.io with socket = "
-							+ sioSocket.getRemoteSocketAddress()
-							+ " and msg = " + sioMsg);
-
-				} catch (IOException e) {
-					logger.error("fail to read from socket.io with socket = "
-							+ sioSocket.getRemoteSocketAddress(), e);
-					verboseLogger
-							.error("fail to read from socket.io with socket = "
-									+ sioSocket.getRemoteSocketAddress());
-					continue;
-				}
-
-				JSONObject jsonObj = toJsonObj(sioMsg);
-				if (jsonObj == null) {
-					verboseLogger
-							.error("fail to parse the message from socket.io with socket = "
-									+ sioSocket.getRemoteSocketAddress()
-									+ " and msg = " + sioMsg);
-					continue;
-				}
-
-				String deviceId = readStringFromJson(jsonObj, "id");
-				if (deviceId == null) {
-					verboseLogger
-							.error("fail to extract device_id from socket.io msg with socket = "
-									+ sioSocket.getRemoteSocketAddress()
-									+ " and msg = " + sioMsg);
-					continue;
-				}
-
-				Socket rokuSocket = rokuSockets.get(deviceId);
-				if (rokuSocket == null || rokuSocket.isClosed()) {
-					verboseLogger
-							.error("msg from socket.io has to be discarded because there is no corresponding roku socket yet or the roku socket has been closed. socket.io socket = "
-									+ sioSocket.getRemoteSocketAddress()
-									+ " and msg = " + sioMsg);
-					continue;
-				}
-
-				// do output
-				String msgForRoku = convertRokuMsgToSioMsg(jsonObj);
-
-				try {
-					writeMsgToRoku(rokuSocket, msgForRoku);
-					String logEntry = MessageFormat
-							.format("successfully output msg to roku. sioMsg = {0}, socket.io socket = {1},  roku socket = {2}, msgForRoku = {3}",
-									sioMsg, sioSocket.getRemoteSocketAddress(),
-									rokuSocket.getRemoteSocketAddress(),
-									msgForRoku);
-					verboseLogger.info(logEntry);
-
-				} catch (IOException e) {
-					String errMsg = MessageFormat
-							.format("failed to output msg to roku. sioMsg = {0}, socket.io socket = {1},  roku socket = {2}, msgForRoku = {3}. exception = {4}",
-									sioMsg, sioSocket.getRemoteSocketAddress(),
-									rokuSocket.getRemoteSocketAddress(),
-									msgForRoku, e.getMessage());
-					logger.error(errMsg, e);
-					verboseLogger.error(errMsg);
-					continue;
-				}
-
-			}
-
-		}
-
-	}
-
 	private String readMsgFromSocket(InputStream in) throws IOException {
 
 		List<String> lines = new ArrayList<String>();
@@ -265,15 +127,6 @@ public class RswsServers {
 				return StringUtils.join(lines, "\n");
 			}
 			lines.add(line);
-		}
-
-	}
-
-	private void writeMsgToRoku(Socket rokuSocket, String msg)
-			throws IOException {
-
-		synchronized (sioSocket) {
-			rokuSocket.getOutputStream().write(msg.getBytes(CHARSET));
 		}
 
 	}
