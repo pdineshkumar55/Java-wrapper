@@ -3,10 +3,11 @@
 0. Install Apache Maven (version >= 3) on your local dev machine. Set up the path as the tutorial tells.
 1. Clone this code
 2. Import it to Eclipse, with File => Import => Existing Maven Projects
-3. Code Change: To Add New Event
-	
-	Update RokuServer.convertRokuMsgToSioMsg()
-	Update SocketIoClient.start(), add another "on" statement
+3. Code Change: To Add New Event, you need to: 
+   
+    Update RokuServer.convertRokuMsgToSioMsg()
+    
+    Update SocketIoClient.start(), add another "on" statement
 
 4. After changing code, go to the directory of this, and run "mvn clean package" (and push the changes of course)
 5. You will found a "rsws-xxxxxxx-jarset.zip" file in "target" directory
