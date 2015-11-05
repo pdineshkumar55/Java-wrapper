@@ -1,7 +1,9 @@
 package com.rita.rsws;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.MessageFormat;
@@ -162,7 +164,9 @@ public class RswsServers {
 				InputStream in = null;
 				try {
 					in = sioSocket.getInputStream();
-					sioMsg = IOUtils.toString(in, CHARSET);
+					sioMsg = readMsgFromSocket(in);
+					
+					
 					verboseLogger.info("msg got from socket.io with socket = "
 							+ sioSocket.getRemoteSocketAddress()
 							+ " and msg = " + sioMsg);
@@ -200,6 +204,7 @@ public class RswsServers {
 							.error("msg from socket.io has to be discarded because there is no corresponding roku socket yet or the roku socket has been closed. socket.io socket = "
 									+ sioSocket.getRemoteSocketAddress()
 									+ " and msg = " + sioMsg);
+					continue;
 				}
 
 				// do output
@@ -207,6 +212,13 @@ public class RswsServers {
 
 				try {
 					writeMsgToRoku(rokuSocket, msgForRoku);
+					String logEntry = MessageFormat
+							.format("successfully output msg to roku. sioMsg = {0}, socket.io socket = {1},  roku socket = {2}, msgForRoku = {3}",
+									sioMsg, sioSocket.getRemoteSocketAddress(),
+									rokuSocket.getRemoteSocketAddress(),
+									msgForRoku);
+					verboseLogger.info(logEntry);
+					
 				} catch (IOException e) {
 					String errMsg = MessageFormat
 							.format("failed to output roku msg. sioMsg = {0}, socket.io socket = {1},  roku socket = {2}, msgForRoku = {3}",
@@ -215,11 +227,23 @@ public class RswsServers {
 									msgForRoku);
 					logger.error(errMsg, e);
 					verboseLogger.error(errMsg);
+					continue;
 				}
 
 			}
 
 		}
+
+	}
+
+	private String readMsgFromSocket(InputStream in) throws IOException {
+		if (RswsEnv.isProduct()) {
+			return IOUtils.toString(in, CHARSET);
+		} else {
+			return new BufferedReader(new InputStreamReader(in, CHARSET))
+					.readLine();
+		}
+
 	}
 
 	private void writeMsgToRoku(Socket rokuSocket, String msg)
@@ -249,7 +273,7 @@ public class RswsServers {
 				InputStream in = null;
 				try {
 					in = socket.getInputStream();
-					rokuMsg = IOUtils.toString(in, CHARSET);
+					rokuMsg = readMsgFromSocket(in);
 					verboseLogger.info("msg got from roku with socket = "
 							+ socket.getRemoteSocketAddress() + " and msg = "
 							+ rokuMsg);
@@ -261,6 +285,7 @@ public class RswsServers {
 							+ socket.getRemoteSocketAddress());
 					continue;
 				}
+				
 
 				JSONObject jsonObj = toJsonObj(rokuMsg);
 				if (jsonObj == null) {
@@ -292,10 +317,16 @@ public class RswsServers {
 							.error("msg from roku has to be discarded because there is no socket.io socket yet or the socket.io has been closed. roku socket = "
 									+ socket.getRemoteSocketAddress()
 									+ " and msg = " + rokuMsg);
+					continue;
 				}
 
 				try {
 					writeMsgToSio(msgForSio);
+					String logEntry = MessageFormat
+							.format("successfully output socket.io msg. rokuMsg = {0}, rokuClient = {1}, msgForSocketIo = {2}",
+									rokuMsg, socket.getRemoteSocketAddress(),
+									msgForSio);
+					verboseLogger.info(logEntry);
 				} catch (IOException e) {
 					String errMsg = MessageFormat
 							.format("failed to output socket.io msg. rokuMsg = {0}, rokuClient = {1}, msgForSocketIo = {2}",
@@ -303,6 +334,7 @@ public class RswsServers {
 									msgForSio);
 					logger.error(errMsg, e);
 					verboseLogger.error(errMsg);
+					continue;
 				}
 
 			}
@@ -358,6 +390,5 @@ public class RswsServers {
 		}
 
 	}
-
 
 }

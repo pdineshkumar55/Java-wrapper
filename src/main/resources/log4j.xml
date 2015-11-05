@@ -10,7 +10,7 @@
 	</appender>
 
  
-	<appender name="root-appender" class="org.apache.log4j.RollingFileAppender">
+	<appender name="root-appender" class="org.apache.log4j.DailyRollingFileAppender">
 		<param name="file" value="./wsrs/root.log" />
 		<param name="append" value="true" />
 		<param name="encoding" value="UTF-8" />
@@ -19,7 +19,7 @@
 		</layout>
 	</appender>
 	
-	<appender name="verbose-appender" class="org.apache.log4j.RollingFileAppender">
+	<appender name="verbose-appender" class="org.apache.log4j.DailyRollingFileAppender">
 		<param name="file" value="./wsrs/verbose.log" />
 		<param name="append" value="true" />
 		<param name="encoding" value="UTF-8" />
