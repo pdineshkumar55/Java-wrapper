@@ -7,13 +7,10 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.lang.StringUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,17 +106,22 @@ public class RokuServer {
 
 	private String readMsgFromSocket(InputStream in) throws IOException {
 
-		List<String> lines = new ArrayList<String>();
+		// List<String> lines = new ArrayList<String>();
+		//
+		// while (true) {
+		// BufferedReader reader = new BufferedReader(new InputStreamReader(
+		// in, CHARSET));
+		// String line = reader.readLine();
+		// if (line == null || line.isEmpty()) {
+		// return StringUtils.join(lines, "\n");
+		// }
+		// lines.add(line);
+		// }
 
-		while (true) {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(
-					in, CHARSET));
-			String line = reader.readLine();
-			if (line == null || line.isEmpty()) {
-				return StringUtils.join(lines, "\n");
-			}
-			lines.add(line);
-		}
+		BufferedReader reader = new BufferedReader(new InputStreamReader(in,
+				CHARSET));
+		String line = reader.readLine();
+		return line;
 
 	}
 
