@@ -27,3 +27,7 @@
 ## Troubleshooting
 
 The log can also be found in file verbose.log and file root.log
+
+## Constraints 
+
+A message from Roku should be of single line. If you send a mulitple-line message, only the first line will be taken. 

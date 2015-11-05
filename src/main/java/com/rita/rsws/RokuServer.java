@@ -7,6 +7,10 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.MessageFormat;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -59,6 +63,37 @@ public class RokuServer {
 		} catch (Exception e) {
 			logger.error("Cannot start roku server socket", e);
 			return;
+		}
+
+		startRokuSocketsScavenger();
+
+	}
+
+	/**
+	 * remove dead roku sockets from {@link #rokuSockets}
+	 */
+	private void startRokuSocketsScavenger() {
+		new Timer().schedule(new RokuSocketsScavengerTask(), 60l * 1000,
+				60l * 1000);
+	}
+
+	private class RokuSocketsScavengerTask extends TimerTask {
+
+		@Override
+		public void run() {
+			verboseLogger
+					.info("roku socket scavenger is working. Currently there are "
+							+ rokuSockets.size()
+							+ " deviceId-tagged socket objects. Some of them may have been closed");
+			for (Iterator<Entry<String, Socket>> iter = rokuSockets.entrySet()
+					.iterator(); iter.hasNext();) {
+				Entry<String, Socket> entry = iter.next();
+				Socket socket = entry.getValue();
+				if (socket == null || socket.isClosed()) {
+					iter.remove();
+				}
+
+			}
 		}
 
 	}
