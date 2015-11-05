@@ -14,11 +14,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.commons.lang.StringUtils;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import com.rita.rsws.clients.SocketIoClient;
 
 /**
  * The main program
@@ -26,25 +26,13 @@ import com.alibaba.fastjson.JSONObject;
  * @author shaunyip@outlook.com
  *
  */
-public class RswsServers {
+public class RokuServer {
 
-	private static RswsServers instance;
-
-	private RswsServers() {
-	}
-
-	public static RswsServers getInstance() {
-		if (null == instance) {
-			instance = new RswsServers();
-		}
-		return instance;
-	}
-
-	private ServerSocket rokuServer;
+	private ServerSocket rokuServerSocket;
 
 	private static Logger verboseLogger = LoggerFactory
 			.getLogger("verboseLogger");
-	private static Logger logger = LoggerFactory.getLogger(RswsServers.class);
+	private static Logger logger = LoggerFactory.getLogger(RokuServer.class);
 
 	private static final int ROKU_SERVER_PORT = 11050;
 
@@ -52,9 +40,9 @@ public class RswsServers {
 
 	private static final String CHARSET = "utf8";
 
-	public ConcurrentHashMap<String, Socket> rokuSockets = new ConcurrentHashMap<String, Socket>();
+	private ConcurrentHashMap<String, Socket> rokuSockets = new ConcurrentHashMap<String, Socket>();
 
-	public Socket sioSocket;
+	private SocketIoClient sioClient;
 
 	public void start() {
 
@@ -64,7 +52,7 @@ public class RswsServers {
 		rokuSocketWorkers = Executors.newCachedThreadPool();
 
 		try {
-			startRokuServer();
+			startRokuServerSocket();
 		} catch (Exception e) {
 			logger.error("Cannot start roku server socket", e);
 			return;
@@ -72,10 +60,10 @@ public class RswsServers {
 
 	}
 
-	private void startRokuServer() throws Exception {
+	private void startRokuServerSocket() throws Exception {
 		// start up the server
 		try {
-			rokuServer = new ServerSocket(ROKU_SERVER_PORT);
+			rokuServerSocket = new ServerSocket(ROKU_SERVER_PORT);
 			verboseLogger.info("Roku server socket started on port "
 					+ ROKU_SERVER_PORT);
 		} catch (IOException e) {
@@ -88,7 +76,7 @@ public class RswsServers {
 				while (true) {
 					Socket clientSocket = null;
 					try {
-						clientSocket = rokuServer.accept();
+						clientSocket = rokuServerSocket.accept();
 					} catch (IOException e) {
 						logger.error(
 								"Failed to take an incoming connection from Roku.",
@@ -131,17 +119,19 @@ public class RswsServers {
 
 	}
 
-	public void writeMsgToRoku(String deviceId, String msg) throws IOException {
+	public void sendMsgToRoku(String deviceId, JSONObject jsonObj)
+			throws Exception {
 
 		Socket rokuSocket = rokuSockets.get(deviceId);
 		if (rokuSocket == null || rokuSocket.isClosed()) {
-			verboseLogger
-					.error("msg from socket.io has to be discarded because there is no corresponding roku socket yet or the roku socket has been closed. socket.io socket = "
-							+ sioSocket.getRemoteSocketAddress()
-							+ " and msg = " + msg);
+			throw new Exception(
+					"msg from socket.io has to be discarded because there is no "
+							+ "corresponding roku socket yet or the roku socket has been closed.  msg = "
+							+ jsonObj.toString());
 		}
 
 		synchronized (rokuSocket) {
+			String msg = convertSioMsgToRokuMsg(jsonObj);
 			rokuSocket.getOutputStream().write(msg.getBytes(CHARSET));
 		}
 
@@ -181,8 +171,8 @@ public class RswsServers {
 					continue;
 				}
 
-				JSONObject jsonObj = toJsonObj(rokuMsg);
-				if (jsonObj == null) {
+				JSONObject rokuJsonObj = toJsonObj(rokuMsg);
+				if (rokuJsonObj == null) {
 					verboseLogger
 							.error("fail to parse the message from roku with socket = "
 									+ socket.getRemoteSocketAddress()
@@ -190,7 +180,7 @@ public class RswsServers {
 					continue;
 				}
 
-				String deviceId = readStringFromJson(jsonObj, "id");
+				String deviceId = readStringFromJson(rokuJsonObj, "id");
 				if (deviceId == null) {
 					verboseLogger
 							.error("fail to extract device_id from roku with socket = "
@@ -205,27 +195,19 @@ public class RswsServers {
 				}
 
 				// do output
-				String msgForSio = convertRokuMsgToSioMsg(jsonObj);
-				if (sioSocket == null || sioSocket.isClosed()) {
-					verboseLogger
-							.error("msg from roku has to be discarded because there is no socket.io socket yet or the socket.io has been closed. roku socket = "
-									+ socket.getRemoteSocketAddress()
-									+ " and msg = " + rokuMsg);
-					continue;
-				}
-
+				JSONObject sioMsgJsonObj = convertRokuMsgToSioMsg(rokuJsonObj);
 				try {
-					writeMsgToSio(msgForSio);
+					sioClient.sendMsgToSio("event", sioMsgJsonObj);
 					String logEntry = MessageFormat
 							.format("successfully output socket.io msg. rokuMsg = {0}, rokuClient = {1}, msgForSocketIo = {2}",
 									rokuMsg, socket.getRemoteSocketAddress(),
-									msgForSio);
+									sioMsgJsonObj);
 					verboseLogger.info(logEntry);
-				} catch (IOException e) {
+				} catch (Exception e) {
 					String errMsg = MessageFormat
 							.format("failed to output msg to socket.io. rokuMsg = {0}, rokuClient = {1}, msgForSocketIo = {2}, exception = {3}",
 									rokuMsg, socket.getRemoteSocketAddress(),
-									msgForSio, e.getMessage());
+									sioMsgJsonObj, e.getMessage());
 					logger.error(errMsg, e);
 					verboseLogger.error(errMsg);
 					continue;
@@ -237,12 +219,12 @@ public class RswsServers {
 
 	}
 
-	private String convertRokuMsgToSioMsg(JSONObject jsonObj) {
-		return jsonObj.toJSONString();
+	private JSONObject convertRokuMsgToSioMsg(JSONObject jsonObj) {
+		return jsonObj;
 	}
 
 	private String convertSioMsgToRokuMsg(JSONObject jsonObj) {
-		return jsonObj.toJSONString();
+		return jsonObj.toString();
 	}
 
 	/**
@@ -253,7 +235,7 @@ public class RswsServers {
 	 */
 	private JSONObject toJsonObj(String msg) {
 		try {
-			return JSON.parseObject(msg);
+			return new JSONObject(msg);
 		} catch (Exception e) {
 			return null;
 		}
@@ -273,16 +255,7 @@ public class RswsServers {
 
 	}
 
-	/**
-	 * write msg to socket io
-	 * 
-	 * @throws IOException
-	 */
-	private void writeMsgToSio(String msg) throws IOException {
-		synchronized (sioSocket) {
-			sioSocket.getOutputStream().write(msg.getBytes(CHARSET));
-		}
-
+	public void setSioClient(SocketIoClient sioClient) {
+		this.sioClient = sioClient;
 	}
-
 }
