@@ -1,10 +1,19 @@
-## How to run
+## How to Develop and Deploy
 
-1. execute "mvn package"
+0. Install Apache Maven (version >= 3) on your local dev machine. Set up the path as the tutorial tells.
+1. Clone this code
+2. Import it to Eclipse, with File => Import => Existing Maven Projects
+3. Code Change: To Add New Event
+	
+	Update RokuServer.convertRokuMsgToSioMsg()
+	Update SocketIoClient.start(), add another "on" statement
 
-2. you will find a zip file called "rsws-xxxxxxx-jarset.zip" under target directory
+4. After changing code, go to the directory of this, and run "mvn clean package" (and push the changes of course)
+5. You will found a "rsws-xxxxxxx-jarset.zip" file in "target" directory
+6. Upload the file to the AWS server
 
-3. unzip it, goto the "bin" directory, and run 
+
+7. unzip it, goto the "bin" directory, and run 
 
 	 
 		startup.sh port-for-wrapper-server socket-io.server-url 
@@ -12,6 +21,7 @@
 
    Please check the console.  
 
+100. p.s. You can also just find the "rsws-xxx.jar" file under "target" and replace the existing one on AWS. 
 
 ## Troubleshooting
 
