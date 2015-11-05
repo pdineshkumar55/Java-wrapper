@@ -11,7 +11,7 @@ public class RswsEnv {
 	/**
 	 * is it product env or test env ?
 	 */
-	public static boolean product = false;
+	public static boolean product = true;
 
 	public static boolean isProduct() {
 		return product;

@@ -7,11 +7,13 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +27,18 @@ import com.alibaba.fastjson.JSONObject;
  *
  */
 public class RswsServers {
+
+	private static RswsServers instance;
+
+	private RswsServers() {
+	}
+
+	public static RswsServers getInstance() {
+		if (null == instance) {
+			instance = new RswsServers();
+		}
+		return instance;
+	}
 
 	private ServerSocket rokuServer;
 	private ServerSocket sioServer;
@@ -40,9 +54,9 @@ public class RswsServers {
 
 	private static final String CHARSET = "utf8";
 
-	private ConcurrentHashMap<String, Socket> rokuSockets = new ConcurrentHashMap<String, Socket>();
+	public ConcurrentHashMap<String, Socket> rokuSockets = new ConcurrentHashMap<String, Socket>();
 
-	private Socket sioSocket;
+	public Socket sioSocket;
 
 	public void start() {
 
@@ -165,8 +179,11 @@ public class RswsServers {
 				try {
 					in = sioSocket.getInputStream();
 					sioMsg = readMsgFromSocket(in);
-					
-					
+
+					if (sioMsg == null || sioMsg.isEmpty()) {
+						continue;
+					}
+
 					verboseLogger.info("msg got from socket.io with socket = "
 							+ sioSocket.getRemoteSocketAddress()
 							+ " and msg = " + sioMsg);
@@ -218,13 +235,13 @@ public class RswsServers {
 									rokuSocket.getRemoteSocketAddress(),
 									msgForRoku);
 					verboseLogger.info(logEntry);
-					
+
 				} catch (IOException e) {
 					String errMsg = MessageFormat
-							.format("failed to output roku msg. sioMsg = {0}, socket.io socket = {1},  roku socket = {2}, msgForRoku = {3}",
+							.format("failed to output msg to roku. sioMsg = {0}, socket.io socket = {1},  roku socket = {2}, msgForRoku = {3}. exception = {4}",
 									sioMsg, sioSocket.getRemoteSocketAddress(),
 									rokuSocket.getRemoteSocketAddress(),
-									msgForRoku);
+									msgForRoku, e.getMessage());
 					logger.error(errMsg, e);
 					verboseLogger.error(errMsg);
 					continue;
@@ -237,16 +254,22 @@ public class RswsServers {
 	}
 
 	private String readMsgFromSocket(InputStream in) throws IOException {
-		if (RswsEnv.isProduct()) {
-			return IOUtils.toString(in, CHARSET);
-		} else {
-			return new BufferedReader(new InputStreamReader(in, CHARSET))
-					.readLine();
+
+		List<String> lines = new ArrayList<String>();
+
+		while (true) {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(
+					in, CHARSET));
+			String line = reader.readLine();
+			if (line == null || line.isEmpty()) {
+				return StringUtils.join(lines, "\n");
+			}
+			lines.add(line);
 		}
 
 	}
 
-	private void writeMsgToRoku(Socket rokuSocket, String msg)
+	public void writeMsgToRoku(Socket rokuSocket, String msg)
 			throws IOException {
 
 		synchronized (sioSocket) {
@@ -274,6 +297,9 @@ public class RswsServers {
 				try {
 					in = socket.getInputStream();
 					rokuMsg = readMsgFromSocket(in);
+					if (rokuMsg == null || rokuMsg.isEmpty()) {
+						continue;
+					}
 					verboseLogger.info("msg got from roku with socket = "
 							+ socket.getRemoteSocketAddress() + " and msg = "
 							+ rokuMsg);
@@ -285,7 +311,6 @@ public class RswsServers {
 							+ socket.getRemoteSocketAddress());
 					continue;
 				}
-				
 
 				JSONObject jsonObj = toJsonObj(rokuMsg);
 				if (jsonObj == null) {
@@ -329,9 +354,9 @@ public class RswsServers {
 					verboseLogger.info(logEntry);
 				} catch (IOException e) {
 					String errMsg = MessageFormat
-							.format("failed to output socket.io msg. rokuMsg = {0}, rokuClient = {1}, msgForSocketIo = {2}",
+							.format("failed to output msg to socket.io. rokuMsg = {0}, rokuClient = {1}, msgForSocketIo = {2}, exception = {3}",
 									rokuMsg, socket.getRemoteSocketAddress(),
-									msgForSio);
+									msgForSio, e.getMessage());
 					logger.error(errMsg, e);
 					verboseLogger.error(errMsg);
 					continue;
