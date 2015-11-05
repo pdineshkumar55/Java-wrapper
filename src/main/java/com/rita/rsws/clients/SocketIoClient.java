@@ -21,8 +21,8 @@ import com.rita.rsws.RokuServer;
  */
 public class SocketIoClient {
 
-	private static final String STATUS = "status";
-
+	public static final String EVENT_STATUS = "status";
+	public static final String ADD_DEVICE = "addDevcie";
  
 
 	private RokuServer rokuServer;
@@ -64,10 +64,10 @@ public class SocketIoClient {
 								+ sioServerUrl);
 			}
 
-		}).on(STATUS, new Emitter.Listener() {
+		}).on(EVENT_STATUS, new Emitter.Listener() {
 			@Override
 			public void call(Object... args) {
-				JSONObject jsonObj = getJsonDataFromEventAndLog(STATUS, args);
+				JSONObject jsonObj = getJsonDataFromEventAndLog(EVENT_STATUS, args);
 				String deviceId = getDeviceIdAndLog(jsonObj);
 				if (deviceId == null) {
 					return;

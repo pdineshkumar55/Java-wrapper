@@ -11,6 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.lang.StringUtils;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,18 +108,6 @@ public class RokuServer {
 
 	private String readMsgFromSocket(InputStream in) throws IOException {
 
-		// List<String> lines = new ArrayList<String>();
-		//
-		// while (true) {
-		// BufferedReader reader = new BufferedReader(new InputStreamReader(
-		// in, CHARSET));
-		// String line = reader.readLine();
-		// if (line == null || line.isEmpty()) {
-		// return StringUtils.join(lines, "\n");
-		// }
-		// lines.add(line);
-		// }
-
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in,
 				CHARSET));
 		String line = reader.readLine();
@@ -177,33 +167,31 @@ public class RokuServer {
 					continue;
 				}
 
-				JSONObject rokuJsonObj = toJsonObj(rokuMsg);
-				if (rokuJsonObj == null) {
-					verboseLogger
-							.error("fail to parse the message from roku with socket = "
-									+ socket.getRemoteSocketAddress()
-									+ " and msg = " + rokuMsg);
-					continue;
-				}
+				Object[] sioMsgResult = null;
+				String event = null;
+				JSONObject sioMsgJsonObj = null;
 
-				String deviceId = readStringFromJson(rokuJsonObj, "id");
-				if (deviceId == null) {
-					verboseLogger
-							.error("fail to extract device_id from roku with socket = "
-									+ socket.getRemoteSocketAddress()
-									+ " and msg = " + rokuMsg);
-					continue;
-				}
-
-				// associate the socket with its deviceId
-				if (!rokuSockets.containsKey(deviceId)) {
-					rokuSockets.put(deviceId, socket);
-				}
-
-				// do output
-				JSONObject sioMsgJsonObj = convertRokuMsgToSioMsg(rokuJsonObj);
 				try {
-					sioClient.sendMsgToSio("event", sioMsgJsonObj);
+					// do output
+					sioMsgResult = convertRokuMsgToSioMsg(rokuMsg);
+					event = (String) sioMsgResult[0];
+					sioMsgJsonObj = (JSONObject) sioMsgResult[1];
+
+					String deviceId = sioMsgJsonObj.getString("id");
+					if (deviceId == null) {
+						verboseLogger
+								.error("fail to extract device_id from roku with socket = "
+										+ socket.getRemoteSocketAddress()
+										+ " and msg = " + rokuMsg);
+						continue;
+					}
+
+					// associate the socket with its deviceId
+					if (!rokuSockets.containsKey(deviceId)) {
+						rokuSockets.put(deviceId, socket);
+					}
+
+					sioClient.sendMsgToSio(event, sioMsgJsonObj);
 					String logEntry = MessageFormat
 							.format("successfully output socket.io msg. rokuMsg = {0}, rokuClient = {1}, msgForSocketIo = {2}",
 									rokuMsg, socket.getRemoteSocketAddress(),
@@ -225,40 +213,64 @@ public class RokuServer {
 
 	}
 
-	private JSONObject convertRokuMsgToSioMsg(JSONObject jsonObj) {
-		return jsonObj;
+	/**
+	 * 
+	 * @param rokuMsg
+	 * @return the 1st is the event, the 2nd is the data
+	 * @throws JSONException
+	 */
+	private Object[] convertRokuMsgToSioMsg(String rokuMsg)
+			throws JSONException {
+		String[] segs = StringUtils.split(rokuMsg, ",");
+		if (segs == null || segs.length == 0) {
+			throw new IllegalArgumentException(
+					"the msg from roku seems empty. It is " + rokuMsg);
+		}
+
+		Object[] result = new Object[2];
+		JSONObject sioMsgJsonObj = new JSONObject();
+		result[1] = sioMsgJsonObj;
+
+		if (segs[0].equalsIgnoreCase(SocketIoClient.ADD_DEVICE)) {
+
+			result[0] = SocketIoClient.ADD_DEVICE;
+
+			if (segs.length >= 2) {
+				sioMsgJsonObj.put("id", segs[1]);
+			}
+			if (segs.length >= 3) {
+				sioMsgJsonObj.put("paired", segs[2]);
+			}
+			if (segs.length >= 3) {
+				sioMsgJsonObj.put("foundWIFi", segs[3]);
+			}
+			if (segs.length >= 4) {
+				sioMsgJsonObj.put("type", segs[4]);
+			}
+			if (segs.length >= 5) {
+				sioMsgJsonObj.put("code", segs[5]);
+			}
+			if (segs.length >= 6) {
+				sioMsgJsonObj.put("ip_adddress", segs[6]);
+			}
+		}
+
+		return result;
 	}
+
+	// private String normalizeRokuMsgValue(String v) {
+	// if (v == null) {
+	// return null;
+	// }
+	// if (v.equalsIgnoreCase("NULL")) {
+	// return null;
+	// }
+	//
+	// return v;
+	// }
 
 	private String convertSioMsgToRokuMsg(JSONObject jsonObj) {
 		return jsonObj.toString();
-	}
-
-	/**
-	 * will return null if the msg is invalid
-	 * 
-	 * @param msg
-	 * @return
-	 */
-	private JSONObject toJsonObj(String msg) {
-		try {
-			return new JSONObject(msg);
-		} catch (Exception e) {
-			return null;
-		}
-	}
-
-	/**
-	 * will return null if the msg is invalid
-	 * 
-	 * @return
-	 */
-	private String readStringFromJson(JSONObject jsonObj, String key) {
-		try {
-			return (String) jsonObj.getString(key);
-		} catch (Exception e) {
-			return null;
-		}
-
 	}
 
 	public void setSioClient(SocketIoClient sioClient) {
