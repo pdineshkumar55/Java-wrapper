@@ -115,21 +115,24 @@ public class RokuServer {
 
 	}
 
-	public void sendMsgToRoku(String deviceId, JSONObject jsonObj)
+	public void sendMsgToRoku(String deviceId, String event, String rokuMsg)
 			throws Exception {
 
 		Socket rokuSocket = rokuSockets.get(deviceId);
 		if (rokuSocket == null || rokuSocket.isClosed()) {
 			throw new Exception(
 					"msg from socket.io has to be discarded because there is no "
-							+ "corresponding roku socket yet or the roku socket has been closed.  msg = "
-							+ jsonObj.toString());
+							+ "corresponding roku socket yet or the roku socket has been closed.  rokuMsg = "
+							+ rokuMsg);
 		}
 
 		synchronized (rokuSocket) {
-			String msg = convertSioMsgToRokuMsg(jsonObj);
-			rokuSocket.getOutputStream().write(msg.getBytes(CHARSET));
+			rokuSocket.getOutputStream().write(rokuMsg.getBytes(CHARSET));
 		}
+		String logEntry = MessageFormat
+				.format("successfully output msg to roku. rokuMsg = {0}, rokuClient = {1},  event={2}",
+						rokuMsg, rokuSocket.getRemoteSocketAddress(), event);
+		verboseLogger.info(logEntry);
 
 	}
 
@@ -193,15 +196,15 @@ public class RokuServer {
 
 					sioClient.sendMsgToSio(event, sioMsgJsonObj);
 					String logEntry = MessageFormat
-							.format("successfully output socket.io msg. rokuMsg = {0}, rokuClient = {1}, msgForSocketIo = {2}",
+							.format("successfully output msg to socket.io server. rokuMsg = {0}, rokuClient = {1},  event={2}, jsonForSocketIo = {3}",
 									rokuMsg, socket.getRemoteSocketAddress(),
-									sioMsgJsonObj);
+									event, sioMsgJsonObj);
 					verboseLogger.info(logEntry);
 				} catch (Exception e) {
 					String errMsg = MessageFormat
-							.format("failed to output msg to socket.io. rokuMsg = {0}, rokuClient = {1}, msgForSocketIo = {2}, exception = {3}",
+							.format("failed to output msg to socket.io server. rokuMsg = {0}, rokuClient = {1}, event= {2}, jsonForSocketIo = {3}, exception = {4}",
 									rokuMsg, socket.getRemoteSocketAddress(),
-									sioMsgJsonObj, e.getMessage());
+									event, sioMsgJsonObj, e.getMessage());
 					logger.error(errMsg, e);
 					verboseLogger.error(errMsg);
 					continue;
@@ -256,21 +259,6 @@ public class RokuServer {
 		}
 
 		return result;
-	}
-
-	// private String normalizeRokuMsgValue(String v) {
-	// if (v == null) {
-	// return null;
-	// }
-	// if (v.equalsIgnoreCase("NULL")) {
-	// return null;
-	// }
-	//
-	// return v;
-	// }
-
-	private String convertSioMsgToRokuMsg(JSONObject jsonObj) {
-		return jsonObj.toString();
 	}
 
 	public void setSioClient(SocketIoClient sioClient) {

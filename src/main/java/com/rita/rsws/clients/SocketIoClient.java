@@ -1,15 +1,15 @@
 package com.rita.rsws.clients;
 
 import io.socket.client.IO;
-import io.socket.client.Manager;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
-import io.socket.emitter.Emitter.Listener;
-import io.socket.engineio.client.Transport;
 
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -25,7 +25,7 @@ import com.rita.rsws.RokuServer;
 public class SocketIoClient {
 
 	public static final String STATUS = "status";
-	public static final String ADD_DEVICE = "addDevcie";
+	public static final String ADD_DEVICE = "addDevice";
 
 	public static final String DEVICE_CONNECTED = "deviceConnected";
 	public static final String TV = "tv";
@@ -76,7 +76,7 @@ public class SocketIoClient {
 					return;
 				}
 				try {
-					rokuServer.sendMsgToRoku(deviceId, jsonObj);
+					rokuServer.sendMsgToRoku(deviceId, STATUS, null);
 				} catch (Exception e) {
 					logSendToRokuException(jsonObj, e);
 
@@ -92,8 +92,18 @@ public class SocketIoClient {
 				if (deviceId == null) {
 					return;
 				}
+
 				try {
-					rokuServer.sendMsgToRoku(deviceId, jsonObj);
+					List<String> rokuSegs = new ArrayList<String>();
+					rokuSegs.add(DEVICE_CONNECTED);
+					rokuSegs.add(jsonObj.getString("id"));
+					rokuSegs.add(jsonObj.getString("paired"));
+					rokuSegs.add(jsonObj.getString("foundWIFi"));
+					rokuSegs.add(jsonObj.getString("type"));
+					rokuSegs.add(jsonObj.getString("code"));
+					rokuSegs.add(jsonObj.getString("ip_adddress"));
+					String rekoMsgs = joinRokuSegs(rokuSegs);
+					rokuServer.sendMsgToRoku(deviceId, DEVICE_CONNECTED, rekoMsgs);
 				} catch (Exception e) {
 					logSendToRokuException(jsonObj, e);
 
@@ -109,7 +119,7 @@ public class SocketIoClient {
 					return;
 				}
 				try {
-					rokuServer.sendMsgToRoku(deviceId, jsonObj);
+					rokuServer.sendMsgToRoku(deviceId, CATPTURE, null);
 				} catch (Exception e) {
 					logSendToRokuException(jsonObj, e);
 
@@ -125,21 +135,13 @@ public class SocketIoClient {
 					return;
 				}
 				try {
-					rokuServer.sendMsgToRoku(deviceId, jsonObj);
+					rokuServer.sendMsgToRoku(deviceId, TV, null);
 				} catch (Exception e) {
 					logSendToRokuException(jsonObj, e);
 
 				}
 			}
 
-		});
-
-		socket.io().on(Manager.EVENT_TRANSPORT, new Listener() {
-			@Override
-			public void call(Object... args) {
-				//Transport transport = (Transport) args[0];
-				verboseLogger.info("socket.io client has got something from the server side!");
-			}
 		});
 
 		socket.connect();
@@ -155,8 +157,8 @@ public class SocketIoClient {
 
 	private JSONObject getJsonDataFromEventAndLog(String event, Object... args) {
 		JSONObject jsonObj = (JSONObject) args[0];
-		verboseLogger.info("On event = {}, json = {} ", event,
-				jsonObj.toString());
+		verboseLogger.info("sockiet.io client on event = {}, json = {} ",
+				event, jsonObj.toString());
 		return jsonObj;
 	}
 
@@ -186,6 +188,10 @@ public class SocketIoClient {
 		}
 	}
 
+	private String joinRokuSegs(List<String> rokuSegs) {
+		return StringUtils.join(rokuSegs, ",") + "\r\n";
+	}
+
 	public void sendMsgToSio(String event, JSONObject jsonObj) {
 		socket.emit(event, jsonObj);
 
@@ -196,4 +202,3 @@ public class SocketIoClient {
 	}
 
 }
-
