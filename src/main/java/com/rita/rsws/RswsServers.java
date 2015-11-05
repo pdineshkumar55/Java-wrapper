@@ -269,10 +269,26 @@ public class RswsServers {
 
 	}
 
-	public void writeMsgToRoku(Socket rokuSocket, String msg)
+	private void writeMsgToRoku(Socket rokuSocket, String msg)
 			throws IOException {
 
 		synchronized (sioSocket) {
+			rokuSocket.getOutputStream().write(msg.getBytes(CHARSET));
+		}
+
+	}
+
+	public void writeMsgToRoku(String deviceId, String msg) throws IOException {
+
+		Socket rokuSocket = rokuSockets.get(deviceId);
+		if (rokuSocket == null || rokuSocket.isClosed()) {
+			verboseLogger
+					.error("msg from socket.io has to be discarded because there is no corresponding roku socket yet or the roku socket has been closed. socket.io socket = "
+							+ sioSocket.getRemoteSocketAddress()
+							+ " and msg = " + msg);
+		}
+
+		synchronized (rokuSocket) {
 			rokuSocket.getOutputStream().write(msg.getBytes(CHARSET));
 		}
 
