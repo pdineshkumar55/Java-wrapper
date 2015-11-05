@@ -4,7 +4,13 @@
 
 2. you will find a zip file called "rsws-xxxxxxx-jarset.zip" under target directory
 
-3. unzip it, goto the "bin" directory, and run startup.sh. Please check the console.  
+3. unzip it, goto the "bin" directory, and run 
+
+	 
+		startup.sh port-for-wrapper-server socket-io.server-url 
+	 
+
+   Please check the console.  
 
 
 ## Troubleshooting

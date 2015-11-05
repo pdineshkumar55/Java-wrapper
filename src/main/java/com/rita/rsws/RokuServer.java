@@ -34,7 +34,7 @@ public class RokuServer {
 			.getLogger("verboseLogger");
 	private static Logger logger = LoggerFactory.getLogger(RokuServer.class);
 
-	private static final int ROKU_SERVER_PORT = 11050;
+	private int rokuServerPort;
 
 	private ExecutorService rokuSocketWorkers;
 
@@ -43,6 +43,10 @@ public class RokuServer {
 	private ConcurrentHashMap<String, Socket> rokuSockets = new ConcurrentHashMap<String, Socket>();
 
 	private SocketIoClient sioClient;
+
+	public RokuServer(int rokuServerPort) {
+		this.rokuServerPort = rokuServerPort;
+	}
 
 	public void start() {
 
@@ -63,9 +67,9 @@ public class RokuServer {
 	private void startRokuServerSocket() throws Exception {
 		// start up the server
 		try {
-			rokuServerSocket = new ServerSocket(ROKU_SERVER_PORT);
+			rokuServerSocket = new ServerSocket(rokuServerPort);
 			verboseLogger.info("Roku server socket started on port "
-					+ ROKU_SERVER_PORT);
+					+ rokuServerPort);
 		} catch (IOException e) {
 			throw e;
 		}

@@ -20,8 +20,12 @@ public class RswsMain {
 
 	public static void main(String[] args) {
 		try {
-			RokuServer rokuServer = new RokuServer();
-			SocketIoClient sioClient = new SocketIoClient();
+			
+			int rokuServerPort = Integer.parseInt(args[0]);
+			String sioServerUrl = args[1];
+			
+			RokuServer rokuServer = new RokuServer(rokuServerPort);
+			SocketIoClient sioClient = new SocketIoClient(sioServerUrl);
 			rokuServer.setSioClient(sioClient);
 			sioClient.setRokuServer(rokuServer);
 

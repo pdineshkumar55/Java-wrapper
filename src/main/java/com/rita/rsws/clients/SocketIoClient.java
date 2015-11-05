@@ -29,7 +29,9 @@ public class SocketIoClient {
 
 	private Socket socket;
 
-	private static final String SOCKET_IO_SERVER = "http://52.8.2.219:3002";
+	private String sioServerUrl;
+	
+	
 
 	private static Logger verboseLogger = LoggerFactory
 			.getLogger("verboseLogger");
@@ -39,6 +41,10 @@ public class SocketIoClient {
 
  
  
+	public SocketIoClient(String sioServerUrl) {
+		this.sioServerUrl = sioServerUrl;
+	}
+
 	public void start() {
 		socket = connectSocketIoServer();
 		socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
@@ -47,7 +53,7 @@ public class SocketIoClient {
 			public void call(Object... args) {
 				verboseLogger
 						.info("Connection with socket.io is done. the server is "
-								+ SOCKET_IO_SERVER);
+								+ sioServerUrl);
 			}
 
 		}).on(Socket.EVENT_DISCONNECT, new Emitter.Listener() {
@@ -55,7 +61,7 @@ public class SocketIoClient {
 			public void call(Object... args) {
 				verboseLogger
 						.info("Connection with socket.io is broken. the server is "
-								+ SOCKET_IO_SERVER);
+								+ sioServerUrl);
 			}
 
 		}).on(STATUS, new Emitter.Listener() {
@@ -113,7 +119,7 @@ public class SocketIoClient {
 	private Socket connectSocketIoServer() {
 
 		try {
-			return IO.socket(SOCKET_IO_SERVER);
+			return IO.socket(sioServerUrl);
 		} catch (URISyntaxException e) {
 			throw new IllegalArgumentException(e);
 		}
