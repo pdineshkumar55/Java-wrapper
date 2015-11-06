@@ -29,7 +29,9 @@ public class SocketIoClient {
 
 	public static final String DEVICE_CONNECTED = "deviceConnected";
 	public static final String TV = "tv";
-	public static final String CATPTURE = "capture";
+	public static final String CAPTURE = "capture";
+	public static final String PAUSE = "pause";
+	public static final String PLAY = "play";
 
 	private RokuServer rokuServer;
 
@@ -110,16 +112,29 @@ public class SocketIoClient {
 				}
 			}
 
-		}).on(CATPTURE, new Emitter.Listener() {
+		}).on(CAPTURE, new Emitter.Listener() {
 			@Override
 			public void call(Object... args) {
-				JSONObject jsonObj = getJsonDataFromEventAndLog(CATPTURE, args);
-				String deviceId = getDeviceIdAndLog(jsonObj);
+				JSONObject jsonObj = getJsonDataFromEventAndLog(CAPTURE, args);
+				String deviceId = null;
+				try {
+					deviceId = jsonObj.getString("rokuID");
+				} catch (JSONException e2) {
+					// TODO Auto-generated catch block
+					e2.printStackTrace();
+				}
+				String Status = null;
+				try {
+					Status = jsonObj.getString("status");
+				} catch (JSONException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 				if (deviceId == null) {
 					return;
 				}
 				try {
-					rokuServer.sendMsgToRoku(deviceId, CATPTURE, null);
+					rokuServer.sendMsgToRoku(deviceId, CAPTURE, "capture");
 				} catch (Exception e) {
 					logSendToRokuException(jsonObj, e);
 
@@ -131,11 +146,18 @@ public class SocketIoClient {
 			public void call(Object... args) {
 				JSONObject jsonObj = getJsonDataFromEventAndLog(TV, args);
 				String deviceId = getDeviceIdAndLog(jsonObj);
+				String Status = null;
+				try {
+					Status = jsonObj.getString("status");
+				} catch (JSONException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 				if (deviceId == null) {
 					return;
 				}
 				try {
-					rokuServer.sendMsgToRoku(deviceId, TV, null);
+					rokuServer.sendMsgToRoku(deviceId, TV, Status);
 				} catch (Exception e) {
 					logSendToRokuException(jsonObj, e);
 
@@ -194,7 +216,6 @@ public class SocketIoClient {
 
 	public void sendMsgToSio(String event, JSONObject jsonObj) {
 		socket.emit(event, jsonObj);
-
 	}
 
 	public void setRokuServer(RokuServer rokuServer) {

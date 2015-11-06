@@ -257,6 +257,34 @@ public class RokuServer {
 				sioMsgJsonObj.put("ip_adddress", segs[6]);
 			}
 		}
+		else if(segs[0].equalsIgnoreCase(SocketIoClient.PAUSE)){
+			
+			result[0] = SocketIoClient.PAUSE;
+			
+			if (segs.length >= 2) {
+				sioMsgJsonObj.put("id", segs[1]);
+			}
+			if (segs.length >= 3) {
+				sioMsgJsonObj.put("video", segs[2]);
+			}
+			if (segs.length >= 4) {
+				sioMsgJsonObj.put("timestamp", segs[3]);
+			}
+		}
+		else if(segs[0].equalsIgnoreCase(SocketIoClient.PLAY)){
+			
+			result[0] = SocketIoClient.PLAY;
+			
+			if (segs.length >= 2) {
+				sioMsgJsonObj.put("id", segs[1]);
+			}
+			if (segs.length >= 3) {
+				sioMsgJsonObj.put("video", segs[2]);
+			}
+			if (segs.length >= 4) {
+				sioMsgJsonObj.put("timestamp", segs[3]);
+			}
+		}
 
 		return result;
 	}
