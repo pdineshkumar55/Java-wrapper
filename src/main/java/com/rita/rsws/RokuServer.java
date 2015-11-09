@@ -7,6 +7,10 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.MessageFormat;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -61,6 +65,37 @@ public class RokuServer {
 			return;
 		}
 
+		startRokuSocketsScavenger();
+
+	}
+
+	/**
+	 * remove dead roku sockets from {@link #rokuSockets}
+	 */
+	private void startRokuSocketsScavenger() {
+		new Timer().schedule(new RokuSocketsScavengerTask(), 60l * 1000,
+				60l * 1000);
+	}
+
+	private class RokuSocketsScavengerTask extends TimerTask {
+
+		@Override
+		public void run() {
+			verboseLogger
+					.info("roku socket scavenger is working. Currently there are "
+							+ rokuSockets.size()
+							+ " deviceId-tagged socket objects. Some of them may have been closed");
+			for (Iterator<Entry<String, Socket>> iter = rokuSockets.entrySet()
+					.iterator(); iter.hasNext();) {
+				Entry<String, Socket> entry = iter.next();
+				Socket socket = entry.getValue();
+				if (socket == null || socket.isClosed()) {
+					iter.remove();
+				}
+
+			}
+		}
+
 	}
 
 	private void startRokuServerSocket() throws Exception {
@@ -79,7 +114,7 @@ public class RokuServer {
 				while (true) {
 					Socket clientSocket = null;
 					try {
-						clientSocket = rokuServerSocket.accept();
+						clientSocket = rokuServerSocket.accept();						
 					} catch (IOException e) {
 						logger.error(
 								"Failed to take an incoming connection from Roku.",
@@ -155,9 +190,13 @@ public class RokuServer {
 				try {
 					in = socket.getInputStream();
 					rokuMsg = readMsgFromSocket(in);
-					if (rokuMsg == null || rokuMsg.isEmpty()) {
-						continue;
+					if (rokuMsg == null) { //the client has been lost
+						socket.close();
+						return;
 					}
+//					if (rokuMsg.isEmpty()) {
+//						continue;
+//					}					
 					verboseLogger.info("msg got from roku with socket = "
 							+ socket.getRemoteSocketAddress() + " and msg = "
 							+ rokuMsg);
