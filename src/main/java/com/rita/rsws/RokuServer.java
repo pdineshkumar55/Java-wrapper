@@ -246,9 +246,8 @@ public class RokuServer {
 					}
 
 					// associate the socket with its deviceId
-					if (!rokuSockets.containsKey(deviceId)) {
-						rokuSockets.put(deviceId, socket);
-					}
+
+					rokuSockets.put(deviceId, socket);
 
 					sioClient.sendMsgToSio(event, sioMsgJsonObj);
 					String logEntry = MessageFormat
@@ -312,11 +311,10 @@ public class RokuServer {
 			if (segs.length >= 6) {
 				sioMsgJsonObj.put("ip_adddress", segs[6]);
 			}
-		}
-		else if(segs[0].equalsIgnoreCase(SocketIoClient.PAUSE)){
-			
+		} else if (segs[0].equalsIgnoreCase(SocketIoClient.PAUSE)) {
+
 			result[0] = SocketIoClient.PAUSE;
-			
+
 			if (segs.length >= 2) {
 				sioMsgJsonObj.put("id", segs[1]);
 			}
@@ -326,11 +324,10 @@ public class RokuServer {
 			if (segs.length >= 4) {
 				sioMsgJsonObj.put("timestamp", segs[3]);
 			}
-		}
-		else if(segs[0].equalsIgnoreCase(SocketIoClient.PLAY)){
-			
+		} else if (segs[0].equalsIgnoreCase(SocketIoClient.PLAY)) {
+
 			result[0] = SocketIoClient.PLAY;
-			
+
 			if (segs.length >= 2) {
 				sioMsgJsonObj.put("id", segs[1]);
 			}
